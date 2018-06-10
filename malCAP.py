@@ -1,49 +1,58 @@
-#TODO Add whitelist
+# TODO Add whitelist
 
-import sys, time, shutil, os, datetime
+import sys
+import time
+import shutil
+import os
+import datetime
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-def copyFile(srcfile): #copies and renames files
-    dstfile = os.path.abspath(logPath) + '\\' + datetime.datetime.now().isoformat().replace(':','-')  + '-' +  os.path.basename(srcfile)
+
+def copyFile(srcfile):  # copies and renames files
+    dstfile = os.path.abspath(logPath) + '\\' + datetime.datetime.now().isoformat().replace(':', '-') + '-' + os.path.basename(srcfile)
     cwPath = os.path.dirname(os.path.abspath(__file__))
-    if  cwPath.lower() not in srcfile.lower():
+    if cwPath.lower() not in srcfile.lower():
 
         try:
-            shutil.copyfile(srcfile,dstfile)
+            shutil.copyfile(srcfile, dstfile)
             print(srcfile + ' --> ' + dstfile)
-            with open('capture-py.log', 'a') as f:     #log files captured to capture-py.log
+            with open('malCAP.log', 'a') as f:  # log files captured to capture-py.log
                 f.write(datetime.datetime.now().strftime('%Y-%m-%d %H-%M-%S') + ',' + srcfile + ',' + dstfile + '\n')
         except (OSError, IOError):
             pass
 
-class FileEventHandler(FileSystemEventHandler): #Fires on file event
-    def on_modified(self, event): #runs on file modified
-        srcfile = str(event).split("'")[1].replace('\\\\','\\') #extract file name and path
+
+class FileEventHandler(FileSystemEventHandler):  # Fires on file event
+    def on_modified(self, event):  # runs on file modified
+        srcfile = str(event).split("'")[1].replace('\\\\', '\\')  # extract file name and path
         copyFile(srcfile)
 
-    def on_deleted(self, event): #runs of file deleted
-        srcfile = str(event).split("'")[1].replace('\\\\','\\') #extract file name and path
+    def on_deleted(self, event):  # runs of file deleted
+        srcfile = str(event).split("'")[1].replace('\\\\', '\\')  # extract file name and path
         copyFile(srcfile)
 
-if len(sys.argv) != 3: #check if all arguments are provded or exit
-    print('capture-py.py <capture-directory> <save-directory>')
+
+if len(sys.argv) != 3:  # check if all arguments are provded or exit
+    print('malCAP.py <capture-directory> <save-directory>')
     sys.exit()
 
-watchPath = sys.argv[1] #files to watch
-logPath = sys.argv[2] #where to log/archive files
+watchPath = sys.argv[1]  # files to watch
+logPath = sys.argv[2]  # where to log/archive files
 
-if not os.path.exists(logPath): #if logPath doesn't exsist, create it.
+if not os.path.exists(logPath):  # if logPath doesn't exsist, create it.
     os.makedirs(logPath)
 
 event_handler = FileEventHandler()
 observer = Observer()
 observer.schedule(event_handler, watchPath, recursive=True)
 observer.start()
+print('Capture started. Press Ctrl-C to stop')
 
 try:
     while True:
         time.sleep(1)
 except KeyboardInterrupt:
     observer.stop()
+    print('Capture Stopped')
 observer.join()
